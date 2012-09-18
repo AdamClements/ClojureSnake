@@ -1,14 +1,12 @@
 (ns snake.core
-  (:require [quil.core  :refer :all]
-            [clojure.set :refer [difference
-                                 intersection
-                                 union]]))
+  (:require [clojure.set :refer [difference intersection union]]))
 
 (def ^:dynamic *playing-field* [20 20])
 
-
 (defn next-dest [[head trail & _]]   (map - head trail))
 (defn wrap-around-world [dest]       (map mod dest *playing-field*))
+
+(def default-snake-shape '([0 0] [1 0] [2 0]))
 
 (defn dest [snake direction]
   (->> (case direction
@@ -26,9 +24,12 @@
         (difference (set oldfood) (set filled))
         (seq) (rand-nth))))
 
+(defn apply-when [pred x f]
+  (if (pred x) (f x) x))
+
 (defn default-snake []
   (let [start-pt (map / *playing-field* (repeat 2))]
-    (map (partial map + start-pt) [[0 0] [0 1] [0 2]])))
+    (map (partial map + start-pt) default-snake-shape)))
 
 (defn default-world []
   {:snake      (default-snake)
@@ -38,15 +39,16 @@
 
 (defn eat-self [app]
   (fn [{snake :snake :as world}]
-    (app (if (apply distinct? snake) world
-           (assoc world :game-over? true)))))
+    (app (cond (apply distinct? snake) world
+               :else (assoc world :game-over? true)))))
 
 (defn eat-food [app]
   (fn [{:keys [snake food speed] :as world}]
-    (app (if (empty? (intersection (set snake) #{food}))
-           (assoc world :snake (butlast snake))
-           (assoc world :food  (random-empty-pt #{food} snake)
-                        :speed (inc speed))))))
+    (app (cond (empty? (intersection (set snake) #{food}))
+               (assoc world :snake (butlast snake))
+               :else
+               (assoc world :food  (random-empty-pt #{food} snake)
+                            :speed (inc speed))))))
 
 (defn wrap [app]
   (fn [{snake :snake :as world}]
@@ -60,15 +62,13 @@
 
 (defn restart-game [app]
   (fn [{:keys [events] :as world}]
-    (if (or (nil? world) (= (first events) :f2))
-      (default-world)
-      (app world))))
+    (cond (nil? world)           (default-world) ;; I realise this seems redundant,
+          (= (first events) :f2) (default-world) ;; but they may differ in future.
+          :else                  (app world))))
 
 (defn game-running [app]
-  (fn [{:keys [game-over? events] :as world}]
-    (if game-over?
-      world
-      (app world))))
+  (fn [world] (condp :game-over? world world
+                    :else (app world))))
 
 (def game (-> identity
            eat-self

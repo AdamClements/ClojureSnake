@@ -1,8 +1,8 @@
 (ns snake.drawquil
   (:require [quil.core :refer :all]
-            [snake.core :refer :all]))
+            [snake.newcore :refer :all]))
 
-(def world (atom nil))
+(def world (atom (default-world)))
 
 (defn connected? [[a b]]
   (= 1 (abs (reduce + (map - a b)))))
@@ -55,8 +55,9 @@
     (draw-food food)
     (when game-over? (draw-gameover))))
 
-(defsketch snake-game
-  :title "SNAKES"
-  :key-pressed stack-events
-  :setup #(frame-rate 1)
-  :draw  draw)
+(defn new-game []
+ (defsketch snake-game
+   :title "SNAKES"
+   :key-pressed stack-events
+   :setup #(frame-rate 1)
+   :draw  draw))
