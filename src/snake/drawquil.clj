@@ -1,8 +1,8 @@
 (ns snake.drawquil
   (:require [quil.core :refer :all]
-            [snake.newcore :refer :all]))
+            [snake.core :refer :all]))
 
-(def world (atom (default-world)))
+(defonce world (atom (default-world)))
 
 (defn connected? [[a b]]
   (= 1 (abs (reduce + (map - a b)))))
